@@ -1,6 +1,6 @@
 {
   "name": "context-diet",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Optimize source code files for LLM consumption by stripping structural and stylistic redundancy",
   "type": "module",
   "bin": {
@@ -19,14 +19,15 @@
     "node": ">=18"
   },
   "dependencies": {
-  "commander": "^13.1.0",
-  "gpt-tokenizer": "^2.8.1",
-  "inquirer": "^12.4.2",
-  "picocolors": "^1.1.1",
+    "commander": "^13.1.0",
+    "gpt-tokenizer": "^2.8.1",
+    "ignore": "^7.0.4",
+    "inquirer": "^12.4.2",
+    "picocolors": "^1.1.1",
     "tree-sitter": "^0.22.4",
-  "tree-sitter-javascript": "^0.23.1",
-  "tree-sitter-python": "^0.23.6",
-  "tree-sitter-typescript": "^0.23.2"
+    "tree-sitter-javascript": "^0.23.1",
+    "tree-sitter-python": "^0.23.6",
+    "tree-sitter-typescript": "^0.23.2"
   },
   "devDependencies": {
     "@types/node": "^22.13.10",

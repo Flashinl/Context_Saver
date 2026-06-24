@@ -16,7 +16,7 @@ const program = new Command();
 program
   .name("context-diet")
   .description("Compress source files for LLM context — fast, local, no API calls")
-  .version("1.1.0")
+  .version("1.2.0")
   .argument("[paths...]", "Files or directories to compress")
   .option("-i, --interactive", "Prompt for options")
   .option(
@@ -31,6 +31,7 @@ program
   .option("--all", "Alias for --preset aggressive")
   .option("-o, --output <dir>", "Write .diet files to this directory")
   .option("-w, --context-window <n>", "Window size for savings estimate", "128000")
+  .option("--price-per-million <usd>", "Input token price per 1M tokens (default: 2.50)", "2.5")
   .option("--print", "Print compressed source to stdout")
   .option("--quiet", "Summary only, no per-file noise")
   .action(async (paths: string[], options) => {
@@ -52,6 +53,7 @@ interface RunOptions {
   all?: boolean;
   output?: string;
   contextWindow?: string;
+  pricePerMillion?: string;
   print?: boolean;
   quiet?: boolean;
 }
@@ -60,6 +62,7 @@ async function run(argvPaths: string[], options: RunOptions) {
   let inputPaths = argvPaths.map((p) => resolve(p));
   let flags: OptimizationFlags;
   let contextWindow = Number(options.contextWindow ?? 128_000);
+  const pricePerMillion = Number(options.pricePerMillion ?? 2.5);
   let writeOutput = Boolean(options.output);
   const outputDir = options.output ? resolve(options.output) : undefined;
 
@@ -99,7 +102,7 @@ async function run(argvPaths: string[], options: RunOptions) {
   for (const filePath of filePaths) {
     const language = detectLanguage(filePath)!;
     const source = await readFile(filePath, "utf-8");
-    const result = optimizeSource(source, language, flags, contextWindow);
+    const result = optimizeSource(source, language, flags, contextWindow, pricePerMillion);
     totalMs += result.elapsedMs;
 
     if (!assertSyntaxValid(language, result.optimized) && !options.quiet) {

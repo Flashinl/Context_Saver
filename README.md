@@ -46,7 +46,7 @@ Node 18+. Native `tree-sitter` bindings — `npm install` compiles them locally.
 # single file, print result
 context-diet --print src/app.ts
 
-# directory (skips node_modules, dist, .git, etc.)
+# directory (respects .gitignore, skips node_modules, lockfiles, binaries)
 context-diet src/
 
 # write compressed copies
@@ -69,11 +69,28 @@ context-diet --quiet src/
 --print          stdout
 -o, --output     write .diet files
 -w, --context-window <n>  for the savings estimate (default: 128000)
+--price-per-million <usd> input token price for cost estimate (default: 2.50)
 ```
 
-## What it actually removes
+## Token economics
 
-**Comments** — line, block, JSDoc, Python docstrings. String literals are untouched.
+Counts use `gpt-tokenizer` (cl100k_base). The summary reports tokens saved and an estimated API cost — e.g. `Saved 1,420 tokens · $0.0035 estimated savings` at the default $2.50/1M input rate (GPT-4o pricing). Override with `--price-per-million 15` for Claude Opus-tier pricing.
+
+Relative savings matter more than the exact dollar figure, but putting a number on it makes the win tangible.
+
+## Directory traversal
+
+When you pass a folder, context-diet:
+
+- Walks `.gitignore` rules (merged from the project root up)
+- Skips `node_modules`, `dist`, `.venv`, and other ignored paths
+- Ignores lockfiles (`package-lock.json`, `yarn.lock`, `Cargo.lock`, etc.)
+- Ignores binary assets (images, fonts, compiled objects) via extension and content sniffing
+- Only processes human-readable `.ts`, `.js`, `.py` source files
+
+## What it removes
+
+**Comments** — removed via tree-sitter AST analysis, not regex. The parser maps every string, template literal, and regex node first; comments are only stripped outside those spans. A URL like `https://api.example.com` inside a string stays intact. Same for `//` inside template literals.
 
 **Imports** — replaced with one line: `// imports: react,axios`. Package names are deduplicated (you won't see `react` and `useState` listed separately).
 
@@ -84,12 +101,6 @@ context-diet --quiet src/
 **Long strings** (aggressive) — literals over 32 chars become `""`. The model knows a string is there without reading your 400-char error message.
 
 **Whitespace** — C-style languages get minified. Python keeps indentation (breaking that would break the file).
-
-## Token counts
-
-Counts use `gpt-tokenizer` (cl100k_base, same family as GPT-4). The summary shows input tokens, output tokens, percent saved, and what fraction of your context window that frees up.
-
-These numbers won't match Claude's tokenizer exactly. The relative savings are what matter — if you go from 4,200 to 1,600 tokens, that's real context back regardless of provider.
 
 ## Supported languages
 

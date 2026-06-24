@@ -25,6 +25,7 @@ export function optimizeSource(
   language: SupportedLanguage,
   flags: OptimizationFlags,
   contextWindow?: number,
+  pricePerMillion?: number,
 ): PipelineResult {
   const started = performance.now();
   let current = source;
@@ -59,7 +60,7 @@ export function optimizeSource(
     current = minifyWhitespace(current, language);
   }
 
-  const metrics = computeMetrics(source, current, contextWindow);
+  const metrics = computeMetrics(source, current, contextWindow, pricePerMillion);
 
   return {
     original: source,

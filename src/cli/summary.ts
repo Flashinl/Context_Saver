@@ -1,6 +1,6 @@
 import pc from "picocolors";
 import type { TokenMetrics } from "../types.js";
-import { DEFAULT_CONTEXT_WINDOW } from "../tokens/estimator.js";
+import { DEFAULT_CONTEXT_WINDOW, formatCostUsd } from "../tokens/estimator.js";
 
 export function formatNumber(n: number): string {
   return n.toLocaleString("en-US");
@@ -14,7 +14,6 @@ export function renderSummaryCard(
 ): string {
   const width = 50;
   const pad = (s: string) => s.padEnd(width);
-  const border = pc.dim("─".repeat(width + 2));
 
   const lines = [
     pc.bold(" compression summary"),
@@ -22,6 +21,7 @@ export function renderSummaryCard(
     `  ${pc.dim("input")}      ${formatNumber(metrics.original)} tokens`,
     `  ${pc.dim("output")}     ${pc.green(formatNumber(metrics.optimized))} tokens`,
     `  ${pc.dim("saved")}      ${pc.green(formatNumber(metrics.tokensSaved))} (${metrics.reductionPercent}%)`,
+    `  ${pc.dim("api cost")}   ${pc.green(formatCostUsd(metrics.estimatedCostSaved))} estimated savings`,
     `  ${pc.dim("window")}    ${metrics.contextWindowSavedPercent}% of ${formatNumber(contextWindow)}`,
     `  ${pc.dim("file")}       ${fileLabel}`,
   ];
@@ -45,8 +45,9 @@ export function renderMultiFileSummary(
       original: acc.original + f.metrics.original,
       optimized: acc.optimized + f.metrics.optimized,
       tokensSaved: acc.tokensSaved + f.metrics.tokensSaved,
+      estimatedCostSaved: acc.estimatedCostSaved + f.metrics.estimatedCostSaved,
     }),
-    { original: 0, optimized: 0, tokensSaved: 0 },
+    { original: 0, optimized: 0, tokensSaved: 0, estimatedCostSaved: 0 },
   );
 
   const reductionPercent =
@@ -65,6 +66,7 @@ export function renderMultiFileSummary(
       reductionPercent,
       tokensSaved: totals.tokensSaved,
       contextWindowSavedPercent,
+      estimatedCostSaved: totals.estimatedCostSaved,
     },
     `${files.length} files`,
     contextWindow,

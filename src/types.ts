@@ -29,6 +29,7 @@ export interface TokenMetrics {
   reductionPercent: number;
   tokensSaved: number;
   contextWindowSavedPercent: number;
+  estimatedCostSaved: number;
 }
 
 export interface PipelineResult {
