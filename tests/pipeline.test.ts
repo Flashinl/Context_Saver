@@ -73,6 +73,13 @@ describe("stripComments (AST-safe)", () => {
     expect(result).not.toContain("trailing");
   });
 
+  it("preserves regex literals containing comment-like sequences", () => {
+    const source = "const re = /https?:\\/\\/[^/]+/; // drop me";
+    const result = stripComments(source, "javascript");
+    expect(result).toContain("/https?:\\/\\/[^/]+/");
+    expect(result).not.toContain("drop me");
+  });
+
   it("removes Python docstrings via AST", () => {
     const result = stripComments(PY_SAMPLE, "python");
     expect(result).not.toContain("Module docstring");

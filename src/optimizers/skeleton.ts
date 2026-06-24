@@ -18,8 +18,6 @@ const JS_FN_TYPES = new Set([
   "export_statement",
 ]);
 
-const JS_CLASS_TYPES = new Set(["class_declaration", "class_body"]);
-
 export function skeletonize(
   source: string,
   language: SupportedLanguage,

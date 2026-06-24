@@ -1,5 +1,5 @@
 import { readdir, stat, open } from "node:fs/promises";
-import { join, relative, resolve } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 import { detectLanguage } from "../parser/languages.js";
 import {
   isBinaryExtension,
@@ -7,6 +7,18 @@ import {
   isIgnored,
   loadGitignore,
 } from "./ignore.js";
+
+const SKIP_DIRS = new Set([
+  "node_modules",
+  ".git",
+  "dist",
+  "build",
+  "coverage",
+  ".next",
+  "__pycache__",
+  ".venv",
+  "venv",
+]);
 
 export async function collectSourceFiles(paths: string[]): Promise<string[]> {
   const files = new Set<string>();
@@ -42,6 +54,8 @@ async function walkDirectory(
   const entries = await readdir(dir, { withFileTypes: true });
 
   for (const entry of entries) {
+    if (entry.isDirectory() && SKIP_DIRS.has(entry.name)) continue;
+
     const full = join(dir, entry.name);
     const rel = relative(cwd, full).replace(/\\/g, "/");
 
@@ -97,12 +111,6 @@ async function looksBinary(filePath: string): Promise<boolean> {
   } finally {
     await handle?.close();
   }
-}
-
-function dirname(filePath: string): string {
-  const normalized = filePath.replace(/\\/g, "/");
-  const idx = normalized.lastIndexOf("/");
-  return idx === -1 ? "." : normalized.slice(0, idx);
 }
 
 export function relPath(file: string, cwd = process.cwd()): string {

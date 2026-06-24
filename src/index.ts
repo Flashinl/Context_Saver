@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { readFile, writeFile, mkdir } from "node:fs/promises";
-import { basename, dirname, join, resolve } from "node:path";
+import { join, resolve } from "node:path";
 import { Command } from "commander";
 import pc from "picocolors";
 import { detectLanguage } from "./parser/index.js";
@@ -62,7 +62,11 @@ async function run(argvPaths: string[], options: RunOptions) {
   let inputPaths = argvPaths.map((p) => resolve(p));
   let flags: OptimizationFlags;
   let contextWindow = Number(options.contextWindow ?? 128_000);
-  const pricePerMillion = Number(options.pricePerMillion ?? 2.5);
+  const pricePerMillion = Math.max(0, Number(options.pricePerMillion ?? 2.5));
+  if (Number.isNaN(pricePerMillion)) {
+    console.error(pc.red("error: --price-per-million must be a number"));
+    process.exit(1);
+  }
   let writeOutput = Boolean(options.output);
   const outputDir = options.output ? resolve(options.output) : undefined;
 

@@ -13,10 +13,8 @@ const PROTECTED_NODE_TYPES = new Set([
   "string_literal",
   "template_string",
   "template_literal",
-  "template_substitution",
   "regex",
   "regex_pattern",
-  "escape_sequence",
   "interpreted_string_literal",
   "raw_string_literal",
   "concatenated_string",
@@ -26,29 +24,33 @@ const COMMENT_NODE_TYPES = new Set(["comment"]);
 
 /**
  * Strip comments using tree-sitter to identify string/template/regex spans.
- * Comments are never removed inside protected AST ranges — URLs in strings,
- * template literals, and regex patterns stay intact.
+ * All removals are computed against the original source in one pass so byte
+ * offsets stay consistent.
  */
 export function stripComments(
   source: string,
   language: SupportedLanguage,
 ): string {
   const tree = parseSource(language, source);
-  const protectedRanges = collectProtectedRanges(tree.rootNode);
+  const protectedRanges = mergeRanges(collectProtectedRanges(tree.rootNode));
   const docstringRanges =
     language === "python" ? collectPythonDocstringRanges(tree.rootNode) : [];
 
-  let result = stripCommentNodes(source, tree.rootNode);
-  result = stripUnprotectedComments(result, language, [
-    ...protectedRanges,
-    ...docstringRanges,
-  ]);
+  const removalRanges: ByteRange[] = [];
+
+  walkTree(tree.rootNode, (node) => {
+    if (COMMENT_NODE_TYPES.has(node.type)) {
+      removalRanges.push({ start: node.startIndex, end: node.endIndex });
+    }
+  });
+
+  removalRanges.push(...scanCommentRanges(source, language, protectedRanges));
 
   if (language === "python") {
-    result = removeRanges(result, docstringRanges);
+    removalRanges.push(...docstringRanges);
   }
 
-  return result;
+  return removeRanges(source, mergeRanges(removalRanges));
 }
 
 function collectProtectedRanges(root: Parser.SyntaxNode): ByteRange[] {
@@ -60,7 +62,7 @@ function collectProtectedRanges(root: Parser.SyntaxNode): ByteRange[] {
     }
   });
 
-  return mergeRanges(ranges);
+  return ranges;
 }
 
 function collectPythonDocstringRanges(root: Parser.SyntaxNode): ByteRange[] {
@@ -92,28 +94,16 @@ function collectPythonDocstringRanges(root: Parser.SyntaxNode): ByteRange[] {
   return ranges;
 }
 
-function stripCommentNodes(source: string, root: Parser.SyntaxNode): string {
-  const comments: ByteRange[] = [];
-  walkTree(root, (node) => {
-    if (COMMENT_NODE_TYPES.has(node.type)) {
-      comments.push({ start: node.startIndex, end: node.endIndex });
-    }
-  });
-  return removeRanges(source, comments);
-}
-
-function stripUnprotectedComments(
+function scanCommentRanges(
   source: string,
   language: SupportedLanguage,
   protectedRanges: ByteRange[],
-): string {
-  const merged = mergeRanges(protectedRanges);
-  let result = "";
+): ByteRange[] {
+  const removals: ByteRange[] = [];
   let i = 0;
 
   while (i < source.length) {
-    if (inRange(i, merged)) {
-      result += source[i]!;
+    if (inRange(i, protectedRanges)) {
       i++;
       continue;
     }
@@ -123,39 +113,41 @@ function stripUnprotectedComments(
 
     if (language === "python") {
       if (ch === "#") {
-        i++;
+        const start = i;
         while (i < source.length && source[i] !== "\n") i++;
+        removals.push({ start, end: i });
         continue;
       }
-      result += ch;
       i++;
       continue;
     }
 
     if (ch === "/" && next === "/") {
+      const start = i;
       i += 2;
       while (i < source.length && source[i] !== "\n") i++;
+      removals.push({ start, end: i });
       continue;
     }
 
     if (ch === "/" && next === "*") {
+      const start = i;
       i += 2;
       while (i < source.length) {
         if (source[i] === "*" && source[i + 1] === "/") {
           i += 2;
           break;
         }
-        if (source[i] === "\n") result += "\n";
         i++;
       }
+      removals.push({ start, end: i });
       continue;
     }
 
-    result += ch;
     i++;
   }
 
-  return result;
+  return removals;
 }
 
 function removeRanges(source: string, ranges: ByteRange[]): string {

@@ -59,7 +59,7 @@ export async function loadGitignore(root: string): Promise<Ignore> {
     dir = parent;
   }
 
-  ig.add(["node_modules/", "dist/", "build/", ".git/"]);
+  ig.add(["node_modules/", "dist/", "build/", ".git/", ".git"]);
   cache.set(abs, ig);
   return ig;
 }
