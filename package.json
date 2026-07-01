@@ -11,7 +11,8 @@
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "benchmark": "tsx scripts/benchmark.ts"
   },
   "keywords": ["llm", "tokens", "minify", "context", "cli"],
   "license": "MIT",

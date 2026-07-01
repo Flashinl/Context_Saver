@@ -46,9 +46,6 @@ export function findExportDeclaration(node: Parser.SyntaxNode): Parser.SyntaxNod
         "function_declaration",
         "lexical_declaration",
         "class_declaration",
-        "interface_declaration",
-        "type_alias_declaration",
-        "enum_declaration",
       ].includes(c.type),
     ) ?? null
   );

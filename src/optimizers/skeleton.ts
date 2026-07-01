@@ -90,12 +90,20 @@ function buildClassSkeleton(node: Parser.SyntaxNode, stub: string): string | nul
   return `class ${name}${typeParams}${heritage}{${inner}}`;
 }
 
+const SKIP_SKELETON_TYPES = new Set([
+  "interface_declaration",
+  "type_alias_declaration",
+  "enum_declaration",
+]);
+
 function buildJsFnStub(
   node: Parser.SyntaxNode,
   source: string,
   stub: string,
   method = false,
 ): string | null {
+  if (SKIP_SKELETON_TYPES.has(node.type)) return null;
+
   if (node.type === "export_statement") {
     const declaration = findExportDeclaration(node);
     if (!declaration) return null;

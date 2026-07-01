@@ -37,8 +37,10 @@ export function stubImports(
 function normalizeModules(modules: string[]): string[] {
   const packages = new Set<string>();
   for (const mod of modules) {
-    const base = mod.split("/")[0]!.split(".")[0]!;
-    packages.add(base);
+    const trimmed = mod.trim();
+    if (!trimmed || trimmed.startsWith(".")) continue;
+    const base = trimmed.split("/")[0]!.split(".")[0]!;
+    if (base) packages.add(base);
   }
   return [...packages].sort();
 }
@@ -101,7 +103,7 @@ function extractModuleNames(
     else {
       for (const part of clauseMatch[1].split(",")) {
         const sym = part.trim().split(/\s+as\s+/)[0]!.trim();
-        if (sym) names.push(sym);
+        if (sym && !sym.startsWith("type ")) names.push(sym);
       }
     }
   }
